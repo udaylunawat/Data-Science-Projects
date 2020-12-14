@@ -1,2 +1,2 @@
-# Machine-Learning-Assignments
-Applied AI Course Assignments
+# Data Science Projects
+Everything I've explored in the field of Data Science
