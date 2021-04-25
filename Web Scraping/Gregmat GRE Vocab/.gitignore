@@ -138,3 +138,4 @@ dmypy.json
 # User added
 *.xlsx
 *.csv
+.ipynb_checkpoints/*
