@@ -90,10 +90,11 @@ def add_set(data, word_list, set_no, sleep = True):
         return data
     
     for word in word_list:
-#         try:
-        definition, synonyms, mnemonics = get_data(word)
-#         except:
-#             print("{} not found at mnemonicdictionary.com!".format(word))
+        try:
+            definition, synonyms, mnemonics = get_data(word)
+        except IndexError as error:
+            print("{} not found at mnemonicdictionary.com!".format(word))
+            
         image_url = get_image(word)
         
         if sleep == True:
