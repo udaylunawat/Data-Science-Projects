@@ -99,7 +99,12 @@ def add_set(data, word_list, set_no, sleep = True):
         
         if sleep == True:
             time.sleep(2)
-        data = data.append({'words':word,'definition':definition,'synonyms':synonyms,'mnemonics':mnemonics,'image_url':image_url, 'Set':'Set '+str(set_no)}, ignore_index=True)
+        data = data.append({'words':word,'definition':definition,'synonyms':synonyms,'mnemonics':mnemonics,'image_url':image_url, 'Set':'Set_'+str(set_no)}, ignore_index=True)
+        data['image_url'] = data['image_url'].apply(lambda x: x.strip('[]\'') if isinstance(x, str) else x) # Removing '[', ']', ''' (comma) from omage_url
+        data['image_url'] = data['image_url'].apply(lambda x: None if isinstance(x, list) and len(x)==0 else x ) # Removing empty lists from url
+        data['image_url'] = data['image_url'].apply(lambda x: x[0] if isinstance(x, list) else x ) # list to string
+        data['image_url'] = data['image_url'].apply(lambda x: '<img src="{}">'.format(x) if isinstance(x, str) and not x.startswith("<img src=") else None)
+        
         print("Added Word {}.".format(word))
     return data
 
