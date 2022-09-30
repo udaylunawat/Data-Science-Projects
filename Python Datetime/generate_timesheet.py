@@ -100,7 +100,7 @@ def main():
         print(f"\n\033[1m{month} Week {index}\033[0m\n")
         mins = int(twm['Total Minutes'])
         hours = int(twm['Total Minutes']) / 60
-        print(f'Actual Total time for the week:- {mins} mins or {hours:.2f} hours')
+        print(f'Actual Total time for the week:- {mins} mins or {hours:.2f} hours.')
         # print('\n14-hour week discount calculations:- \nP.S:- It excludes solo time,
         # as it\'s already charged at discounted rate/hr\n\n')
         if hours > discount_threshold:
@@ -110,7 +110,10 @@ def main():
 
         # if hours > discount_threshold and hours < 18:
         #     print(f"Give {hours - discount_threshold:.3f} discount for Week {index}!!!")
-
+    
+    total_hours = week_data['Total Minutes'].sum() / 60
+    print('#' * 50)
+    print(f"\nTotal time in {month} {year}:- {total_hours:.3f} hours.\n")
     print('#' * 50)
     print("\n\n\nDaily breakdown:-\n\n\n")
     for index, (date, tm, week) in total_minutes_by_date.iterrows():
