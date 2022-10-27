@@ -171,6 +171,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "-t", "--threshold", help="discount threshold", required=False, default=14
     )
+    parser.add_argument(
+        "-tz", "--timezone", help="timezone", required=False, default=5.5
+    )
+    parser.add_argument(
+        "-hrs", "--hrs_diff", help="hours difference", required=False, default=2.5
+    )
 
     args = parser.parse_args()
     file_name = args.file
@@ -178,8 +184,8 @@ if __name__ == "__main__":
     discounted_rate = int(args.discounted_rate)
     discount_threshold = int(args.threshold)
 
-    time_zone = 5.5
+    time_zone = float(args.timezone)
     hour_sign = "+"
-    hour_difference = 2.5
+    hour_difference = float(args.hrs_diff)
 
     main()
