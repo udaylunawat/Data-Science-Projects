@@ -11,38 +11,29 @@ Reason for using Kokoro:- It's the best open-source non-proprietary model in [TT
 ```mermaid
 flowchart TD
     A[👤 User] --> B[🌐 Web Browser]
-    B --> C[📱 Gradio App UI]
-    C --> D[🐍 Gradio Server]
+    B --> C[📱 Gradio UI]
+    C --> D[🐍 Server]
 
-    subgraph Docker_Container [🐳 Docker Container]
-        direction TB
-        D[🐍 Gradio Server]
-        E[📄 PDF Processor]
-        F[🤗 Kokoro TTS Engine]
-        G[📝 Transcript Generator]
-        D --> E
-        E --> G
-        G --> F
+    subgraph docker[🐳 Docker Container]
+        D --> E[📄 PDF Processor]
+        E --> G[📝 Transcript Generator]
+        G --> F[🤗 Kokoro TTS]
     end
 
     F --> H[🔊 Audio Output]
     D --> H
     H --> B
-    G -->|API Request| I[🤖 OpenAI/OpenRouter API]
-    I -->|API Response| G
+    G <--> I[🤖 OpenAI/OpenRouter]
 
-    style A fill:#2d333b,stroke:#539bf5
-    style B fill:#2d333b,stroke:#539bf5
-    style C fill:#2d333b,stroke:#539bf5
-    style Docker_Container fill:#22272e,stroke:#539bf5,stroke-width:2px
-    style D fill:#1c2128,stroke:#444c56
-    style E fill:#1c2128,stroke:#444c56
-    style F fill:#1c2128,stroke:#444c56
-    style G fill:#1c2128,stroke:#444c56
-    style H fill:#1a2f1d,stroke:#46954a
-    style I fill:#2d2312,stroke:#d29922
-    
-    linkStyle default stroke:#539bf5,stroke-width:2px
+    classDef container fill:#0d1117,stroke:#30363d,stroke-width:2px
+    classDef node fill:#161b22,stroke:#30363d
+    classDef output fill:#238636,stroke:#2ea043
+    classDef api fill:#1f6feb,stroke:#388bfd
+
+    class docker container
+    class A,B,C,D,E,F,G node
+    class H output
+    class I api
 ```
 
 ## Features
