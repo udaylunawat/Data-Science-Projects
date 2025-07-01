@@ -141,6 +141,10 @@ python gradio_app.py
 - **PDF Issues:** Ensure the PDF contains readable text (not scanned images)
 - **Memory Issues:** For large PDFs, ensure sufficient system memory is available
 
+## Alternatives
+- [podcastify](https://github.com/souzatharsis/podcastfy?tab=readme-ov-file)
+- [LocalNotebook LM](https://github.com/Goekdeniz-Guelmez/Local-NotebookLM)
+
 ## Contributing
 
 Feel free to open issues or submit pull requests for improvements!
