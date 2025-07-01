@@ -1,60 +1,119 @@
 # NotebookLM-Kokoro TTS Project
 
-This project uses [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) – a lightweight, open-weight TTS model with 82 million parameters – to create a Google NotebookLM style Text-to-Speech application.
+This project uses [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) – a lightweight, open-weight TTS model with 82 million parameters – to create a Google NotebookLM style Text-to-Speech application with a user-friendly Gradio interface.
 
-## Why Kokoro?
+🚀 **Try it out:** [Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/udayl/NotebookLM-Kokoro_TTS_App)
 
-- **Non-Proprietary & Open-Source:** Kokoro is best in its class as a non-proprietary model, giving you full flexibility to deploy in production environments or personal projects.
-- **High Efficiency:** Despite its lightweight architecture, Kokoro delivers comparable quality to larger models while being faster and more cost-efficient.
-- **Benchmarks:** According to benchmarks available on the [TTS-Arena](https://huggingface.co/spaces/TTS-AGI/TTS-Arena) page, Kokoro outperforms many closed-source models, making it the ideal choice for open deployments.
-- **Easy Integration:** With simple pip and Homebrew installation for dependencies like espeak-ng, integration into Python projects is straightforward.
+## Features
+
+- **PDF to Audio Conversion:** Upload any PDF document and convert it into engaging conversations
+- **Multiple Voice Options:** Choose from different voices for each speaker
+- **API Flexibility:** Support for both OpenAI and OpenRouter APIs
+- **Parallel Processing:** Utilizes all CPU cores for faster audio generation
+- **User-Friendly Interface:** Easy-to-use Gradio web interface
+- **Cross-Platform:** Works on Windows, Linux, and macOS
 
 ## Setup Instructions
 
-### Environment Setup
+### 1. System Dependencies
 
-This project uses the **uv** Python package manager. Follow these steps:
-
-1. **Install uv:**
-
-   ```bash
-   pip install uv
-   ```
-
-2. **Create a new environment named `notebooklm`:**
-
-   ```bash
-   uv venv
-   ```
-
-3. **Activate the environment:**
-
-   ```bash
-   source .venv/bin/activate
-   ```
-
-4. **Install Python dependencies:**
-
-   ```bash
-   pip install "kokoro>=0.9.2" soundfile torch
-   ```
-
-5. **Install espeak-ng (Mac users):**
-
-   ```bash
-   brew install espeak-ng
-   ```
-
-### Running the Application
-
-Once the environment is set up, run the main TTS script as follows:
-
+**macOS:**
 ```bash
-python notebook_lm_kokoro.py
+brew install espeak-ng
 ```
 
-This will process the transcript text using Kokoro and output audio segments as WAV files.
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get update
+sudo apt-get install espeak-ng
+```
 
-## Conclusion
+**Windows:**
+1. Download espeak-ng from [GitHub releases](https://github.com/espeak-ng/espeak-ng/releases)
+2. Run the installer and add it to your system PATH
 
-Kokoro’s combination of efficiency, quality, and open-access makes it the best non-proprietary TTS model available, as confirmed by recent benchmarks. Enjoy exploring and extending this project!
+### 2. Python Environment Setup
+
+This project uses Python 3.9+ and can be set up using either uv or pip:
+
+#### Using uv (Recommended)
+```bash
+# Install uv
+pip install uv
+
+# Create and activate virtual environment
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
+
+#### Using pip
+```bash
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Or install individually:
+```bash
+pip install "kokoro>=0.9.2" soundfile torch gradio PyPDF2 numpy openai ipython
+```
+
+## Running the Application
+
+1. **Start the Gradio Interface:**
+```bash
+python gradio_app.py
+```
+
+2. **Access the Interface:**
+- Open your browser and go to: `http://127.0.0.1:7860`
+- Or use the provided public URL for temporary access
+
+3. **Using the Interface:**
+- Upload a PDF document
+- Choose voices for Speaker 1 and Speaker 2
+- Select your preferred API provider (OpenAI/OpenRouter)
+- Enter your API key
+- Click "Generate Audio" to create the conversation
+
+## API Configuration
+
+### OpenAI
+- Sign up at [OpenAI](https://platform.openai.com)
+- Get your API key from the dashboard
+- Use `https://api.openai.com/v1` as the API base URL
+
+### OpenRouter
+- Sign up at [OpenRouter](https://openrouter.ai)
+- Get your API key from the dashboard
+- Use default base URL or your custom endpoint
+
+## Performance Notes
+
+- Audio generation is parallelized across CPU cores for optimal performance
+- Processing time depends on:
+  - PDF length
+  - Available CPU cores
+  - System memory
+  - Network speed for API calls
+
+## Troubleshooting
+
+- **Audio Not Generating:** Ensure espeak-ng is properly installed and accessible
+- **API Errors:** Verify your API key and base URL
+- **PDF Issues:** Ensure the PDF contains readable text (not scanned images)
+- **Memory Issues:** For large PDFs, ensure sufficient system memory is available
+
+## Contributing
+
+Feel free to open issues or submit pull requests for improvements!
+
+## License
+
+This project is open-source and available under the MIT License.
