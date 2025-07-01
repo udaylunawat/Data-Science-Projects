@@ -9,7 +9,7 @@ Reason for using Kokoro:- It's the best open-source non-proprietary model in [TT
 ## Architecture diagram
 
 ```mermaid
-flowchart TD
+graph TD
     A[👤 User] --> B[🌐 Web Browser]
     B --> C[📱 Gradio UI]
     C --> D[🐍 Server]
@@ -25,13 +25,12 @@ flowchart TD
     H --> B
     G <--> I[🤖 OpenAI/OpenRouter]
 
-    classDef container fill:#0d1117,stroke:#30363d,stroke-width:2px
-    classDef node fill:#161b22,stroke:#30363d
+    classDef default fill:#0d1117,stroke:#30363d
+    classDef container fill:#161b22,stroke:#30363d
     classDef output fill:#238636,stroke:#2ea043
     classDef api fill:#1f6feb,stroke:#388bfd
 
     class docker container
-    class A,B,C,D,E,F,G node
     class H output
     class I api
 ```
