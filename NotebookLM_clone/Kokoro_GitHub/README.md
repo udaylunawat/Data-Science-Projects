@@ -2,7 +2,48 @@
 
 This project uses [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) – a lightweight, open-weight TTS model with 82 million parameters – to create a Google NotebookLM style Text-to-Speech application with a user-friendly Gradio interface.
 
+Reason for using Kokoro:- It's the best open-source non-proprietary model in [TTS-Arena](https://huggingface.co/spaces/TTS-AGI/TTS-Arena)
+
 🚀 **Try it out:** [Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/udayl/NotebookLM-Kokoro_TTS_App)
+
+## Architecture diagram
+
+```mermaid
+flowchart TD
+    A[👤 User] --> B[🌐 Web Browser]
+    B --> C[📱 Gradio App UI]
+    C --> D[🐍 Gradio Server]
+
+    subgraph Docker_Container [🐳 Docker Container]
+        direction TB
+        D[🐍 Gradio Server]
+        E[📄 PDF Processor]
+        F[🤗 Kokoro TTS Engine]
+        G[📝 Transcript Generator]
+        D --> E
+        E --> G
+        G --> F
+    end
+
+    F --> H[🔊 Audio Output]
+    D --> H
+    H --> B
+    G -->|API Request| I[🤖 OpenAI/OpenRouter API]
+    I -->|API Response| G
+
+    style A fill:#2d333b,stroke:#539bf5
+    style B fill:#2d333b,stroke:#539bf5
+    style C fill:#2d333b,stroke:#539bf5
+    style Docker_Container fill:#22272e,stroke:#539bf5,stroke-width:2px
+    style D fill:#1c2128,stroke:#444c56
+    style E fill:#1c2128,stroke:#444c56
+    style F fill:#1c2128,stroke:#444c56
+    style G fill:#1c2128,stroke:#444c56
+    style H fill:#1a2f1d,stroke:#46954a
+    style I fill:#2d2312,stroke:#d29922
+    
+    linkStyle default stroke:#539bf5,stroke-width:2px
+```
 
 ## Features
 
