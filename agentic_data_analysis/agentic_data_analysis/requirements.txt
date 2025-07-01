@@ -1,0 +1,8 @@
+pandas
+numpy
+scipy
+scikit-learn
+plotly
+nltk
+google-adk
+kaleido
