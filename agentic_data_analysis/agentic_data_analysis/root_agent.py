@@ -1,314 +1,119 @@
 import os
+import pandas as pd
 from google.adk import Agent
 from google.adk.tools import ToolContext
-from .src.utils.data_loader import DataLoader  # Fixed import
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import re
-import plotly.io as pio
-from datetime import datetime
-import os
-import base64
-from io import BytesIO
+import pandasql as psql
+from google.genai import types
+from google.adk.artifacts import InMemoryArtifactService
+from google.adk.sessions import InMemorySessionService
+from google.adk.runners import Runner
 
-async def load_data_tool(file_path: str, tool_context: ToolContext):
-    """Tool to load data from CSV/Excel files"""
-    loader = DataLoader()
-    try:
-        # Load the data and store in state
-        df = loader.load_data(file_path)
-        
-        # Convert DataFrame to a serializable format before storing
-        tool_context.state['data'] = df.to_dict('records')
-        
-        # Return only serializable metadata about the data
-        return {
-            "status": "success", 
-            "message": f"Data loaded successfully from {file_path}",
-            "metadata": {
-                "shape": list(df.shape),
-                "columns": list(df.columns),
-                "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-                "sample_size": min(5, len(df)),
-                "total_rows": len(df),
-                "total_columns": len(df.columns),
-                "numeric_columns": list(df.select_dtypes(include=['int64', 'float64']).columns),
-                "categorical_columns": list(df.select_dtypes(include=['object', 'category']).columns),
-                "missing_values": {df.isnull().sum().to_dict()}
-            }
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+# Hardcoded path to CSV
+CSV_FILE_PATH = os.getenv("CSV_FILE_PATH", "P1-UK-Bank-Customers.csv")
 
-async def analyze_data_tool(query: str, tool_context: ToolContext):
-    """Tool to analyze data based on natural language queries"""
+artifact_service = InMemoryArtifactService()
+session_service = InMemorySessionService()
+
+# --- Data Loader Function ---
+def _is_csv_content(s: str) -> bool:
+    return isinstance(s, str) and '\n' in s and ',' in s and not os.path.exists(s)
+
+def _load_dataframe(file_path_or_content):
+    # If a DataFrame, return as is.
+    if isinstance(file_path_or_content, pd.DataFrame):
+        return file_path_or_content
+    if _is_csv_content(file_path_or_content):
+        from io import StringIO
+        return pd.read_csv(StringIO(file_path_or_content))
+    if not os.path.exists(file_path_or_content):
+        raise FileNotFoundError(f"File not found: {file_path_or_content}")
+    ext = os.path.splitext(file_path_or_content)[-1].lower()
+    if ext == '.csv':
+        return pd.read_csv(file_path_or_content)
+    elif ext in ['.xlsx', '.xls']:
+        return pd.read_excel(file_path_or_content)
+    else:
+        raise ValueError(f"Unsupported file extension: {ext}")
+
+# --- Tool: Execute SQL ---
+async def execute_sql_tool(query: str, tool_context: ToolContext):
+    # Retrieve preloaded data from the tool context state
     data = tool_context.state.get('data')
-    if data is None:
-        return {"status": "error", "message": "No data loaded. Please load data first."}
-
+    if not data:
+        return {"status": "error", "message": "No data loaded. Preload the data first."}
     try:
-        # Convert back to DataFrame
+        # Create a DataFrame from the preloaded data
         df = pd.DataFrame(data)
-        # Get numeric columns for potential analysis
-        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
-        
-        # Basic statistics for all numeric columns
-        if 'summary' in query.lower() or 'statistics' in query.lower():
-            stats = {}
-            for col in numeric_cols:
-                stats[col] = {
-                    "mean": float(df[col].mean()),
-                    "median": float(df[col].median()),
-                    "std": float(df[col].std()),
-                    "min": float(df[col].min()),
-                    "max": float(df[col].max())
-                }
+        # If the user is asking for table info, return column details directly
+        if query.strip().upper().startswith("PRAGMA TABLE_INFO"):
+            # Create a synthetic result with common PRAGMA table_info columns:
+            # cid, name, type, notnull, dflt_value, pk.
+            result = []
+            for i, col in enumerate(df.columns):
+                result.append({
+                    "cid": i,
+                    "name": col,
+                    "type": str(df[col].dtype),
+                    "notnull": int(not df[col].isnull().all()),
+                    "dflt_value": None,
+                    "pk": 0
+                })
             return {
                 "status": "success",
-                "analysis": {
-                    "type": "summary_statistics",
-                    "metrics": stats
+                "query_result": {
+                    "data": result,
+                    "shape": [len(result), 6],
+                    "sql_query": query
                 }
             }
-            
-        # Group by analysis
-        elif any(word in query.lower() for word in ['average', 'mean', 'group']):
-            # Find potential grouping columns (categorical)
-            categorical_cols = df.select_dtypes(include=['object', 'category']).columns
-            group_cols = []
-            
-            # Find which categorical columns are mentioned in the query
-            for col in categorical_cols:
-                if col.lower() in query.lower():
-                    group_cols.append(col)
-                    
-            # Find which numeric column to analyze
-            target_col = None
-            for col in numeric_cols:
-                if col.lower() in query.lower():
-                    target_col = col
-                    break
-            
-            # If no specific numeric column mentioned, use the first one
-            if not target_col and len(numeric_cols) > 0:
-                target_col = numeric_cols[0]
-                
-            if group_cols and target_col:
-                result = df.groupby(group_cols)[target_col].agg(['mean', 'count']).round(2)
-                return {
-                    "status": "success",
-                    "analysis": {
-                        "type": "grouped_statistics",
-                        "groups": group_cols,
-                        "target_column": target_col,
-                        "values": result.to_dict(orient='index')
-                    }
-                }
-
-        return {
-            "status": "error",
-            "message": "Could not understand the analysis request. Try asking for 'summary statistics' or 'average by [column]'"
-        }
-        
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-async def visualize_data_tool(query: str, tool_context: ToolContext):
-    """Tool to create visualizations based on data analysis"""
-    data = tool_context.state.get('data')
-    if data is None:
-        return {"status": "error", "message": "No data loaded. Please load data first."}
-    
-    try:
-        df = pd.DataFrame(data)
-        
-        # Get column types
-        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
-        categorical_cols = df.select_dtypes(include=['object', 'category', 'datetime64']).columns
-        
-        # Determine chart type based on query and data types
-        chart_type = None
-        if 'histogram' in query.lower():
-            chart_type = 'histogram'
-        elif 'scatter' in query.lower():
-            chart_type = 'scatter'
-        elif 'line' in query.lower():
-            chart_type = 'line'
-        elif any(word in query.lower() for word in ['bar', 'column', 'distribution']):
-            chart_type = 'bar'
-        else:
-            # Auto-select based on data types
-            if len(numeric_cols) >= 2:
-                chart_type = 'scatter'
-            elif len(categorical_cols) >= 1 and len(numeric_cols) >= 1:
-                chart_type = 'bar'
-            else:
-                chart_type = 'histogram'
-        
-        # Select columns based on query and chart type
-        x_col = None
-        y_col = None
-        
-        # Find columns mentioned in query
-        mentioned_cols = [col for col in df.columns if col.lower() in query.lower()]
-        
-        if chart_type == 'histogram':
-            # For histogram, prefer numeric column
-            x_col = next((col for col in mentioned_cols if col in numeric_cols), 
-                        numeric_cols[0] if len(numeric_cols) > 0 else df.columns[0])
-            
-        elif chart_type == 'scatter':
-            # Need two numeric columns
-            numeric_mentioned = [col for col in mentioned_cols if col in numeric_cols]
-            if len(numeric_mentioned) >= 2:
-                x_col, y_col = numeric_mentioned[:2]
-            else:
-                x_col = numeric_cols[0]
-                y_col = numeric_cols[1] if len(numeric_cols) > 1 else numeric_cols[0]
-                
-        else:  # bar or line
-            # Prefer categorical for x and numeric for y
-            if mentioned_cols:
-                x_col = next((col for col in mentioned_cols if col in categorical_cols), None)
-                y_col = next((col for col in mentioned_cols if col in numeric_cols), None)
-            
-            # Fallback defaults
-            if x_col is None:
-                x_col = categorical_cols[0] if len(categorical_cols) > 0 else numeric_cols[0]
-            if y_col is None:
-                y_col = numeric_cols[0] if len(numeric_cols) > 0 else categorical_cols[0]
-        
-        # Create the figure
-        fig = None
-        if chart_type == 'histogram':
-            fig = px.histogram(df, x=x_col, title=f'Distribution of {x_col}')
-        elif chart_type == 'scatter':
-            fig = px.scatter(df, x=x_col, y=y_col, title=f'{y_col} vs {x_col}')
-        elif chart_type == 'line':
-            fig = px.line(df, x=x_col, y=y_col, title=f'{y_col} over {x_col}')
-        else:  # bar
-            fig = px.bar(df, x=x_col, y=y_col, title=f'{y_col} by {x_col}')
-        
-        # Update layout
-        fig.update_layout(
-            template='plotly_white',
-            title_x=0.5,
-            margin=dict(t=100, l=50, r=50, b=50),
-            showlegend=True,
-            width=800,  # Optimal for UI display
-            height=600,
-            autosize=False
-        )
-
-        # Create reports directory if it doesn't exist
-        os.makedirs('agentic_data_analysis/data/reports', exist_ok=True)
-        
-        # Generate unique filename
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        img_filename = f'plot_{timestamp}.png'
-        img_path = os.path.join('agentic_data_analysis/data/reports', img_filename)
-        
-        # Generate image as bytes
-        img_bytes = pio.to_image(fig, format='png')
-        
-        # Convert to base64 encoded string
-        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
-        
-        # Create HTML-compatible image tag
-        html_img = f"<img src='data:image/png;base64,{img_base64}'/>"
-        
-        return {
-            "status": "success",
-            "visualization": {
-                "plotly": fig.to_json(),
-                "image_html": html_img,  # UI-renderable format
-                "type": chart_type,
-                "x_column": x_col,
-                "y_column": y_col
-            }
-        }
-        
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-
-async def query_data_tool(query: str, tool_context: ToolContext):
-    """Tool to handle complex data queries"""
-    data = tool_context.state.get('data')
-    if data is None:
-        return {"status": "error", "message": "No data loaded. Please load data first."}
-        
-    try:
-        df = pd.DataFrame(data)
-        
-        # Extract operations from query
-        operations = {
-            'filter': any(word in query.lower() for word in ['where', 'filter', 'only']),
-            'sort': any(word in query.lower() for word in ['sort', 'order by']),
-            'limit': 'top' in query.lower() or 'limit' in query.lower()
-        }
-        
-        result = df.copy()
-        
-        # Apply operations based on query
-        if operations['filter']:
-            # Basic filtering
-            for col in df.columns:
-                if col.lower() in query.lower():
-                    # Look for basic comparisons
-                    if 'greater than' in query.lower() or '>' in query:
-                        value = float(re.findall(r'\d+', query)[0])
-                        result = result[result[col] > value]
-                    elif 'less than' in query.lower() or '<' in query:
-                        value = float(re.findall(r'\d+', query)[0])
-                        result = result[result[col] < value]
-                        
-        if operations['sort']:
-            for col in df.columns:
-                if col.lower() in query.lower():
-                    ascending = 'ascending' in query.lower() or 'asc' in query.lower()
-                    result = result.sort_values(by=col, ascending=ascending)
-                    break
-                    
-        if operations['limit']:
-            limit = int(re.findall(r'\d+', query)[0]) if re.findall(r'\d+', query) else 5
-            result = result.head(limit)
-            
+        # Otherwise execute the SQL query normally
+        result = psql.sqldf(query, {"data": df})
         return {
             "status": "success",
             "query_result": {
                 "data": result.to_dict('records'),
                 "shape": list(result.shape),
-                "operations_applied": [k for k, v in operations.items() if v]
+                "sql_query": query
             }
         }
-        
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"SQL Error: {str(e)}"}
+
+# --- Preload Data ---
+async def preload_data_tool(tool_context: ToolContext):
+    try:
+        # Load CSV data into a DataFrame
+        df = _load_dataframe(CSV_FILE_PATH)
+        df.columns = df.columns.str.strip().str.replace(' ', '_').str.lower()
+        # Store the data directly in the tool context state (without nesting)
+        tool_context.state["data"] = df.to_dict('records')
+        print(f"Preloaded data: {df.shape[0]} records, columns: {list(df.columns)}")
+        return {"status": "success", "message": "Data preloaded successfully."}
+    except Exception as e:
+        return {"status": "error", "message": f"Error preloading data: {str(e)}"}
 
 
-# Define the root agent
+# --- Agent Configuration ---
+# SQL Executor Agent: Assumes data is already loaded
 root_agent = Agent(
-    name="data_analysis_assistant",
-    model=os.getenv("MODEL_NAME", "gemini-2.0-flash"),
-    instruction="""You are a data analysis assistant that can:
-    1. Load and examine data from CSV and Excel files
-    2. Provide summary statistics and insights
-    3. Create visualizations (bar charts, scatter plots, histograms)
-    4. Analyze relationships between variables
-    
-    When handling visualization requests:
-    1. Check if data is loaded
-    2. Determine the appropriate chart type
-    3. Select relevant columns based on the query
-    4. Create clear and informative visualizations
-    5. Show file paths for image if you can't display them directly
-    
-    Supported chart types:
-    - Bar charts for categorical comparisons
-    - Scatter plots for relationships
-    - Line charts for trends
-    - Histograms for distributions""",
-    tools=[load_data_tool, analyze_data_tool, visualize_data_tool, query_data_tool]
+    name="sql_executor_agent",
+    model="gemini-2.5-flash",
+    instruction="""
+You are an expert SQL executor.
+The dataset is already loaded into memory.
+Your task is to generate and execute clean and executable SQL queries on the dataset based on user request. Table name is data
+""",
+    tools=[execute_sql_tool, preload_data_tool],
+    generate_content_config=types.GenerateContentConfig(
+        temperature=0.7,
+        max_output_tokens=2000
+    )
+)
+
+# --- Runner ---
+runner = Runner(
+    agent=root_agent,
+    app_name="agentic_data_analysis",
+    session_service=session_service,
+    artifact_service=artifact_service
 )
