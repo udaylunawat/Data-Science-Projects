@@ -116,6 +116,9 @@ pip install -r requirements.txt
 cp .env.example .env  # Update with your Google API key and any other required settings
 ```
 
+**Note:** In `root_agent.py`, the path to the CSV file is hardcoded due to issues with data loading in Google ADK. The setting is data agnostic, so feel free to change it if needed.
+
+
 ---
 
 ## Usage Example
@@ -123,6 +126,7 @@ cp .env.example .env  # Update with your Google API key and any other required s
 Start the web interface (with autodiscovery for file changes):
 
 ```bash
+# Please run this command outside the project folder to ensure proper detection of the project structure
 adk web --reload
 ```
 

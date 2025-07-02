@@ -6,3 +6,4 @@ plotly
 nltk
 google-adk
 kaleido
+pandasql
