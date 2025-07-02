@@ -154,6 +154,13 @@ Consider the following as part of your improvement roadmap:
 
 ---
 
+## Presentattions
+
+- slidesgpt - https://slidesgpt.com/l/pzKi
+- Gamma - agentic_data_analysis/Automated-Data-Analysis-Framework)gamma.pptx
+- app.presentations.ai - agentic_data_analysis/Automated Data Analysis Framework.pdf
+
+
 ## Resources
 
 - [Google ADK Data Science Example](https://github.com/google/adk-samples/tree/main/python/agents/data-science/data_science)
