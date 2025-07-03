@@ -13,6 +13,10 @@ Agentic Data Analysis is a conversational AI framework built for automated data 
 
 ---
 
+## Demo
+
+https://github.com/user-attachments/assets/de688367-8a42-4a8e-ad4a-a7364ef9f807
+
 ## Why Choose Google ADK?
 
 1. **Built-In Production Tooling (Zero Setup)**
