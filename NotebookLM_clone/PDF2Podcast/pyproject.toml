@@ -11,5 +11,6 @@ dependencies = [
     "PyPDF2",
     "numpy",
     "openai",
-    "ipython"
+    "ipython",
+    "gradio"
 ]
