@@ -8,10 +8,7 @@ Reason for using Kokoro:- It's the best open-source non-proprietary model in [TT
 
 ## Sample audio
 
-<video width="100%" controls>
-  <source src="https://github.com/udaylunawat/Data-Science-Projects/raw/refs/heads/master/NotebookLM_clone/PDF2Podcast/attention.mp4?raw=True" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+https://github.com/user-attachments/assets/6ba7338b-9e63-42ed-88e3-e5890ebb949c
 
 ## Architecture diagram
 
