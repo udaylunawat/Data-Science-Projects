@@ -91,8 +91,9 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ### 3. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
+[More about UV](https://docs.astral.sh/uv/guides/projects/#__tabbed_1_1)
 
 Or install individually:
 ```bash
