@@ -6,6 +6,14 @@ Reason for using Kokoro:- It's the best open-source non-proprietary model in [TT
 
 🚀 **Try it out:** [Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/udayl/NotebookLM-Kokoro_TTS_App)
 
+## Sample audio
+
+<!-- Or alternatively using HTML video tag for more control -->
+<video width="100%" controls>
+  <source src="attention.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 ## Architecture diagram
 
 ```mermaid
