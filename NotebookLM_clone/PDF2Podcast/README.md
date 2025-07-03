@@ -8,9 +8,8 @@ Reason for using Kokoro:- It's the best open-source non-proprietary model in [TT
 
 ## Sample audio
 
-<!-- Or alternatively using HTML video tag for more control -->
 <video width="100%" controls>
-  <source src="attention.mp4" type="video/mp4">
+  <source src="https://github.com/udaylunawat/Data-Science-Projects/raw/refs/heads/master/NotebookLM_clone/PDF2Podcast/attention.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
