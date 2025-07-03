@@ -1,4 +1,4 @@
-# NotebookLM-Kokoro TTS Project
+# PDF2Podcast
 
 This project uses [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) – a lightweight, open-weight TTS model with 82 million parameters – to create a Google NotebookLM style Text-to-Speech application with a user-friendly Gradio interface.
 
