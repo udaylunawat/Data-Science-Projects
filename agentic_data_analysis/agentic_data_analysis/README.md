@@ -4,7 +4,6 @@
 
 Agentic Data Analysis is a conversational AI framework built for automated data analysis using natural language queries. Key capabilities include:
 
-- 📊 **Smart Visualization Selection**: Histograms, scatter plots, bar/line charts, and more.
 - 🔍 **Automated Profiling**: Data profiling and detailed statistical analysis.
 - 🧩 **Modular Tool Architecture**: Seamlessly integrates data ingestion, analysis, visualization, and querying.
 - 🤖 **Integrated Gemini Model**: Powered by the gemini-2.5-flash model via Google ADK.
