@@ -6,6 +6,9 @@ Reason for using Kokoro:- It's the best open-source non-proprietary model in [TT
 
 Kyutai:- It's a newly launched (3rd July 2025) open-source realtime TTS model that's even comparable to ElevenLabs models
 
+<img width="1079" alt="Screenshot 2025-07-07 at 01 53 14" src="https://github.com/user-attachments/assets/93484a1f-aabd-4f92-b5d5-12f8e63168ee" />
+
+
 🚀 **Try it out:** [Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/udayl/NotebookLM-Kokoro_TTS_App)
 
 ### 🔗 Run this notebook in Google Colab
