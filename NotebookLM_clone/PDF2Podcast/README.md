@@ -4,7 +4,7 @@ This project uses [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) – a ligh
 
 Reason for using Kokoro:- It's the best open-source non-proprietary model in [TTS-Arena](https://huggingface.co/spaces/TTS-AGI/TTS-Arena)
 
-Kyutai:- It's 
+Kyutai:- It's a newly launched (3rd July 2025) open-source realtime TTS model that's even comparable to ElevenLabs models
 
 🚀 **Try it out:** [Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/udayl/NotebookLM-Kokoro_TTS_App)
 
