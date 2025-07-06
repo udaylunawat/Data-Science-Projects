@@ -12,5 +12,7 @@ dependencies = [
     "numpy",
     "openai",
     "ipython",
-    "gradio"
+    "gradio",
+    "sphn>=0.2.0",
+    "moshi>=0.2.4",
 ]
