@@ -23,6 +23,14 @@ import asyncio
 import ast
 import json
 import warnings
+import torch
+import time
+try:
+    from moshi.models.loaders import CheckpointInfo
+    from moshi.models.tts import DEFAULT_DSM_TTS_REPO, DEFAULT_DSM_TTS_VOICE_REPO, TTSModel
+except ImportError:
+    CheckpointInfo = None
+    TTSModel = None
 warnings.filterwarnings("ignore")
 
 # Set your OpenAI (or OpenRouter) API key from the environment
@@ -187,6 +195,67 @@ def generate_audio_from_script(script, output_file="podcast_audio.wav"):
         print(f"Error processing transcript: {e}")
         return
 
+def generate_audio_kyutai(script, speaker1_voice=None, speaker2_voice=None, output_file="kyutai_audio.wav"):
+    if TTSModel is None:
+        print("Moshi is not installed.")
+        return None
+
+    try:
+        print(f"[INFO] Requested Kyutai voices: {speaker1_voice=}, {speaker2_voice=}")
+        # Reject absolute/local paths
+        if os.path.isabs(speaker1_voice) or os.path.isfile(speaker1_voice):
+            raise ValueError(f"❌ Invalid voice path for speaker1: {speaker1_voice}")
+        if os.path.isabs(speaker2_voice) or os.path.isfile(speaker2_voice):
+            raise ValueError(f"❌ Invalid voice path for speaker2: {speaker2_voice}")
+
+        transcript_list = ast.literal_eval(script)
+
+        # Load TTS model
+        checkpoint_info = CheckpointInfo.from_hf_repo(DEFAULT_DSM_TTS_REPO)
+        tts_model = TTSModel.from_checkpoint_info(
+            checkpoint_info,
+            n_q=32,
+            temp=0.6,
+            device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        )
+
+        # Use voice names directly from dropdown
+        print("[INFO] Resolving voice paths...")
+
+        start = time.time()
+        voice1_path = tts_model.get_voice_path(speaker1_voice)
+        print(f"[INFO] Got voice1_path in {time.time() - start:.2f}s")
+
+        start = time.time()
+        voice2_path = tts_model.get_voice_path(speaker2_voice)
+        print(f"[INFO] Got voice2_path in {time.time() - start:.2f}s")
+
+        texts = [dialogue for _, dialogue in transcript_list]
+        entries = tts_model.prepare_script(texts, padding_between=1)
+
+        condition_attributes = tts_model.make_condition_attributes([voice1_path, voice2_path], cfg_coef=2.0)
+
+        pcms = []
+        def _on_frame(frame):
+            if (frame != -1).all():
+                pcm = tts_model.mimi.decode(frame[:, 1:, :]).cpu().numpy()
+                pcms.append(np.clip(pcm[0, 0], -1, 1))
+
+        with tts_model.mimi.streaming(1):
+            tts_model.generate([entries], [condition_attributes], on_frame=_on_frame)
+
+        if pcms:
+            audio = np.concatenate(pcms, axis=-1)
+            sf.write(output_file, audio, tts_model.mimi.sample_rate)
+            print(f"[SUCCESS] Audio saved to: {output_file}")
+            return output_file
+
+        print("[WARNING] No audio segments were produced.")
+        return None
+
+    except Exception as e:
+        print(f"[ERROR] Kyutai TTS error: {e}")
+        return None
 
 def generate_tts():
     pipeline = KPipeline(lang_code="a")

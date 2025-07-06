@@ -97,7 +97,7 @@ async def preload_data_tool(tool_context: ToolContext):
 # SQL Executor Agent: Assumes data is already loaded
 root_agent = Agent(
     name="sql_executor_agent",
-    model="gemini-2.5-flash",
+    model="gemini-2.0-flash",
     instruction="""
 You are an expert SQL executor.
 The dataset is already loaded into memory.
@@ -106,7 +106,7 @@ Your task is to generate and execute clean and executable SQL queries on the dat
     tools=[execute_sql_tool, preload_data_tool],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.7,
-        max_output_tokens=2000
+        max_output_tokens=3000
     )
 )
 
