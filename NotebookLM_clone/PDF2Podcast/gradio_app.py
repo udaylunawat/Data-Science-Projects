@@ -6,8 +6,6 @@ import ast
 import numpy as np
 import soundfile as sf
 import warnings
-import multiprocessing
-import concurrent.futures
 
 try:
     from moshi.models.tts import TTSModel
@@ -23,10 +21,8 @@ from notebook_lm_kokoro import (
 )
 
 warnings.filterwarnings("ignore")
-NUM_WORKERS = multiprocessing.cpu_count()
 
-def process_segment(entry_and_voice_map):
-    entry, voice_map = entry_and_voice_map
+def process_segment(entry, voice_map):
     speaker, dialogue = entry
     chosen_voice = voice_map.get(speaker, "af_heart")
     pipeline = KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")
@@ -36,16 +32,16 @@ def process_segment(entry_and_voice_map):
 def generate_audio_from_script_with_voices(script, speaker1_voice, speaker2_voice, output_file):
     print("[DEBUG] Raw transcript string:")
     print(script)
-    
+
     voice_map = {"Speaker 1": speaker1_voice, "Speaker 2": speaker2_voice}
     try:
         transcript_list = ast.literal_eval(script)
         if not isinstance(transcript_list, list):
             raise ValueError("Transcript is not a list")
 
-        entries = [(entry, voice_map) for entry in transcript_list if isinstance(entry, tuple) and len(entry) == 2]
-        with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
-            results = [r for r in executor.map(process_segment, entries) if r is not None]
+        entries = [entry for entry in transcript_list if isinstance(entry, tuple) and len(entry) == 2]
+        results = [process_segment(entry, voice_map) for entry in entries if entry is not None]
+
         if not results:
             return None
         sample_rate = 24000
@@ -92,11 +88,7 @@ def process_pdf(pdf_file, speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_
         if tts_engine == "kyutai":
             result = generate_audio_kyutai(transcript, kyutai_voice1, kyutai_voice2, audio_path)
         else:
-            with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
-                result = executor.submit(
-                    generate_audio_from_script_with_voices,
-                    transcript, speaker1_voice, speaker2_voice, audio_path
-                ).result()
+            result = generate_audio_from_script_with_voices(transcript, speaker1_voice, speaker2_voice, audio_path)
 
         return ("Process complete!", result) if result else ("Error generating audio", None)
     except Exception as e:
@@ -119,66 +111,59 @@ def create_gradio_app():
     with gr.Blocks(css=css, theme=gr.themes.Soft()) as app:
         gr.Markdown("# 🎧 PDF to Podcast — NotebookLM + Kokoro/Kyutai")
 
+        pdf_input = gr.File(file_types=[".pdf"], type="filepath", label="📄 Upload your PDF", scale=2)
+
         with gr.Row():
-            with gr.Column(scale=1.5):
-                pdf_input = gr.File(file_types=[".pdf"], type="filepath", label="📄 Upload your PDF")
-                provider = gr.Radio(["openai", "openrouter"], value="openrouter", label="🧠 API Provider")
-                tts_engine = gr.Radio(["kokoro", "kyutai"], value="kokoro", label="🎤 TTS Engine")
+            speaker1_voice = gr.Dropdown(["af_heart", "af_bella", "hf_beta"], value="af_heart", label="Speaker 1 Voice")
+            speaker2_voice = gr.Dropdown(["af_nicole", "af_heart", "bf_emma"], value="bf_emma", label="Speaker 2 Voice")
+            provider = gr.Radio(["openai", "openrouter"], value="openrouter", label="API Provider")
+            openai_key = gr.Textbox(type="password", label="OpenAI Key")
+            openrouter_key = gr.Textbox(type="password", label="OpenRouter Key")
+            openrouter_base = gr.Textbox(placeholder="https://openrouter.ai/api/v1", label="OpenRouter Base URL")
+            tts_engine = gr.Radio(["kokoro", "kyutai"], value="kokoro", label="TTS Engine")
 
-                speaker1_voice = gr.Dropdown(["af_heart","af_bella","hf_beta"], value="af_heart", label="Speaker 1 Voice", visible=True)
-                speaker2_voice = gr.Dropdown(["af_nicole","af_heart","bf_emma"], value="bf_emma", label="Speaker 2 Voice", visible=True)
-                kyutai_voice1 = gr.Dropdown(
-                    [
-                        "expresso/ex03-ex01_happy_001_channel1_334s.wav",
-                        "expresso/ex03-ex02_narration_001_channel1_674s.wav",
-                        "vctk/p226_023_mic1.wav"
-                    ],
-                    value="expresso/ex03-ex01_happy_001_channel1_334s.wav",
-                    label="Kyutai Voice 1",
-                    visible=True
-                )
+        with gr.Row():
+            kyutai_voice1 = gr.Dropdown([
+                "expresso/ex03-ex01_happy_001_channel1_334s.wav",
+                "expresso/ex03-ex02_narration_001_channel1_674s.wav",
+                "vctk/p226_023_mic1.wav"
+            ],
+            value="expresso/ex03-ex01_happy_001_channel1_334s.wav",
+            label="Kyutai Voice 1",
+            visible=True)
 
-                kyutai_voice2 = gr.Dropdown(
-                    [
-                        "expresso/ex03-ex01_happy_001_channel1_334s.wav",
-                        "expresso/ex03-ex02_narration_001_channel1_674s.wav",
-                        "vctk/p225_023_mic1.wav"
-                    ],
-                    value="expresso/ex03-ex02_narration_001_channel1_674s.wav",
-                    label="Kyutai Voice 2",
-                    visible=True
-                )
+            kyutai_voice2 = gr.Dropdown([
+                "expresso/ex03-ex01_happy_001_channel1_334s.wav",
+                "expresso/ex03-ex02_narration_001_channel1_674s.wav",
+                "vctk/p225_023_mic1.wav"
+            ],
+            value="expresso/ex03-ex02_narration_001_channel1_674s.wav",
+            label="Kyutai Voice 2",
+            visible=True)
 
-                with gr.Accordion("🔐 API Keys", open=True):
-                    openai_key = gr.Textbox(type="password", label="OpenAI Key", show_label=True, visible=True)
-                    openrouter_key = gr.Textbox(type="password", label="OpenRouter Key", show_label=True, visible=True)
-                    openrouter_base = gr.Textbox(placeholder="https://openrouter.ai/api/v1", label="OpenRouter Base URL", visible=True)
+        submit_btn = gr.Button("🎙️ Generate Podcast", variant="primary")
+        status_output = gr.Textbox(label="📝 Status", interactive=False)
+        audio_output = gr.Audio(type="filepath", label="🎵 Your Podcast")
 
-                submit_btn = gr.Button("🎙️ Generate Podcast", variant="primary")
+        submit_btn.click(
+            process_pdf,
+            inputs=[pdf_input, speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_voice2,
+                    provider, openai_key, openrouter_key, openrouter_base, tts_engine],
+            outputs=[status_output, audio_output]
+        )
 
-            with gr.Column(scale=1):
-                status_output = gr.Textbox(label="📝 Status", interactive=False)
-                audio_output = gr.Audio(type="filepath", label="🎵 Your Podcast")
-
-            submit_btn.click(
-                process_pdf,
-                inputs=[pdf_input, speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_voice2,
-                        provider, openai_key, openrouter_key, openrouter_base, tts_engine],
-                outputs=[status_output, audio_output]
-            )
-
-            provider.change(update_ui, [provider, tts_engine], 
-                            [speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_voice2,
-                             openai_key, openrouter_key, openrouter_base])
-            tts_engine.change(update_ui, [provider, tts_engine], 
-                              [speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_voice2,
-                               openai_key, openrouter_key, openrouter_base])
+        provider.change(update_ui, [provider, tts_engine],
+                        [speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_voice2,
+                         openai_key, openrouter_key, openrouter_base])
+        tts_engine.change(update_ui, [provider, tts_engine],
+                          [speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_voice2,
+                           openai_key, openrouter_key, openrouter_base])
 
         gr.Markdown("""
         **📌 Tips**
-        - Pick your API provider and then set appropriate keys.
-        - Choose **TTS Engine** (Kokoro/Kyutai) to reveal relevant voice options.
-        - Works well with clean, structured PDFs.
+        - Upload a clean, structured PDF.
+        - Pick your API provider and enter relevant keys.
+        - Choose the TTS engine and customize voices.
         """)
 
     return app

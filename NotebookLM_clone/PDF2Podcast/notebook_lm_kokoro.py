@@ -12,14 +12,12 @@ If using OpenRouter, you can also set:
 """
 
 from kokoro import KPipeline
-from IPython.display import Audio  # Only needed if displaying in a notebook
 import soundfile as sf
 import PyPDF2
 import numpy as np
 import openai
 import os
 import shutil
-import asyncio
 import ast
 import json
 import warnings
@@ -37,8 +35,6 @@ warnings.filterwarnings("ignore")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 # For OpenRouter compatibility, set the API base if provided.
 openai.api_base = os.getenv("OPENROUTER_API_BASE", "https://api.openai.com/v1")
-
-pdf = "1706.03762v7.pdf"
 
 
 def pdf_to_prompted_text(pdf_path):
@@ -142,7 +138,7 @@ def generate_audio_from_script(script, output_file="podcast_audio.wav"):
     # Clean up the script string if needed
     script = script.strip()
     if not script.startswith("[") or not script.endswith("]"):
-        print("Invalid transcript format. Expected a list of tuples.")
+        print("[ERROR] Invalid transcript format. Expected a list of tuples.")
         return
 
     try:
@@ -155,44 +151,39 @@ def generate_audio_from_script(script, output_file="podcast_audio.wav"):
         # Process each dialogue entry
         for i, entry in enumerate(transcript_list):
             if not isinstance(entry, tuple) or len(entry) != 2:
-                print(f"Skipping invalid entry {i}: {entry}")
+                print(f"[WARNING] Skipping invalid entry {i}: {entry}")
                 continue
 
             speaker, dialogue = entry
             chosen_voice = voice_map.get(speaker, "af_heart")
-            print(f"Generating audio for {speaker} with voice '{chosen_voice}'...")
+            print(f"[INFO] Generating audio for {speaker} with voice '{chosen_voice}'...")
 
-            # Updated KPipeline initialization with explicit repo_id
             pipeline = KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")
             generator = pipeline(dialogue, voice=chosen_voice)
 
-            segment_audio = []
-            for j, (gs, ps, audio) in enumerate(generator):
-                # print(
-                #     f"{speaker} - Segment {j}: Global Step = {gs}, Partial Step = {ps}"
-                # )
-                segment_audio.append(audio)
-
+            segment_audio = [audio for _, _, audio in generator]
             if segment_audio:
-                segment_full = np.concatenate(segment_audio, axis=0)
-                all_audio_segments.append(segment_full)
+                all_audio_segments.append(np.concatenate(segment_audio, axis=0))
 
         if not all_audio_segments:
-            print("No audio segments were generated.")
+            print("[ERROR] No audio segments were generated.")
             return
 
         # Add a pause between segments
         sample_rate = 24000
         pause = np.zeros(sample_rate, dtype=np.float32)
-        final_audio = all_audio_segments[0]
-        for seg in all_audio_segments[1:]:
-            final_audio = np.concatenate((final_audio, pause, seg), axis=0)
-
+        final_audio = np.concatenate(
+            [seg if i == 0 else np.concatenate((pause, seg), axis=0)
+             for i, seg in enumerate(all_audio_segments)],
+            axis=0
+        )
         sf.write(output_file, final_audio, sample_rate)
-        print(f"Saved final audio as {output_file}")
+        print(f"[INFO] Saved final audio as {output_file}")
 
     except Exception as e:
-        print(f"Error processing transcript: {e}")
+        import traceback
+        print(f"[ERROR] Exception while parsing transcript or generating audio: {e}")
+        traceback.print_exc()
         return
 
 def generate_audio_kyutai(script, speaker1_voice=None, speaker2_voice=None, output_file="kyutai_audio.wav"):
@@ -298,7 +289,7 @@ def generate_podcast_script(
     destination_pdf = os.path.join(folder, os.path.basename(pdf_path))
     try:
         shutil.copy(pdf_path, destination_pdf)
-        print(f"Copied {pdf_path} to {destination_pdf}")
+        print(f"[INFO] Copied {pdf_path} to {destination_pdf}")
     except PermissionError:
         print(f"[WARNING] Cannot copy PDF to {destination_pdf}, using original path.")
         destination_pdf = pdf_path  # fallback
@@ -308,7 +299,7 @@ def generate_podcast_script(
     if os.path.exists(transcript_path):
         with open(transcript_path, "r") as f:
             transcript = f.read()
-        print(f"Transcript loaded from {transcript_path}")
+        print(f"[INFO] Transcript loaded from {transcript_path}")
         return transcript, transcript_path
 
     # Otherwise, generate the transcript.
@@ -333,15 +324,15 @@ def generate_podcast_script(
     if provider == "openrouter":
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
-        print("Using OpenRouter API endpoint.")
+        print("[INFO] Using OpenRouter API endpoint.")
     else:
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = "https://api.openai.com/v1"
-        print("Using OpenAI API endpoint.")
+        print("[INFO] Using OpenAI API endpoint.")
 
     client = openai.OpenAI(api_key=api_key, base_url=base_url)
     
-    print(f"Sending request to {base_url} to generate a podcast script...")
+    print(f"[INFO] Sending request to {base_url} to generate a podcast script...")
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=messages,
@@ -366,10 +357,10 @@ def generate_podcast_script(
         transcript_list = []
         for i, entry in enumerate(dialogue):
             if not isinstance(entry, list) or len(entry) != 2:
-                print(f"Skipping invalid dialogue entry {i}: {entry}")
+                print(f"[WARNING] Skipping invalid dialogue entry {i}: {entry}")
                 continue
             if entry[0] not in ["Speaker 1", "Speaker 2"]:
-                print(f"Invalid speaker label in entry {i}: {entry[0]}")
+                print(f"[WARNING] Invalid speaker label in entry {i}: {entry[0]}")
                 continue
             transcript_list.append(tuple(entry))
         
@@ -380,31 +371,26 @@ def generate_podcast_script(
         script = str(transcript_list)
         
     except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON response from API: {e}")
-        print(f"Raw response: {response.choices[0].message.content}")
+        print(f"[ERROR] Invalid JSON response from API: {e}")
+        print(f"[ERROR] Raw response: {response.choices[0].message.content}")
         return None, None
     except Exception as e:
-        print(f"Error processing response: {e}")
+        print(f"[ERROR] Error processing response: {e}")
         return None, None
 
     # Save the transcript
     with open(transcript_path, "w") as f:
         f.write(script)
-    print(f"Saved podcast script as {transcript_path}")
+    print(f"[INFO] Saved podcast script as {transcript_path}")
     
     return script, transcript_path
 
 
-async def _generate_script_async(messages):
-    response = await openai.ChatCompletion.acreate(
-        model="gpt-4o-mini", messages=messages, temperature=0.7, max_tokens=20000
-    )
-    return response["choices"][0]["message"]["content"]
 
-
+# Minimal test harness
 if __name__ == "__main__":
-    # For example, to generate a podcast script from the PDF using OpenRouter or OpenAI:
+    pdf = "1706.03762v7.pdf"
     transcript, transcript_path = generate_podcast_script(pdf, provider="openrouter")
-    # Use the transcript to generate and save the audio. The output file is stored in the same folder.
-    audio_output = transcript_path.replace(".txt", ".wav")
-    generate_audio_from_script(transcript, output_file=audio_output)
+    if transcript and transcript_path:
+        audio_output = transcript_path.replace(".txt", ".wav")
+        generate_audio_from_script(transcript, output_file=audio_output)
