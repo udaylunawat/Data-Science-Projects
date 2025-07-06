@@ -1,5 +1,3 @@
-# filepath: gradio_app.py
-
 import os
 import tempfile
 import gradio as gr
@@ -10,6 +8,7 @@ import soundfile as sf
 import warnings
 import multiprocessing
 import concurrent.futures
+
 try:
     from moshi.models.tts import TTSModel
 except ImportError:
@@ -35,10 +34,16 @@ def process_segment(entry_and_voice_map):
     return np.concatenate([audio for _, _, audio in generator], axis=0) if generator else None
 
 def generate_audio_from_script_with_voices(script, speaker1_voice, speaker2_voice, output_file):
+    print("[DEBUG] Raw transcript string:")
+    print(script)
+    
     voice_map = {"Speaker 1": speaker1_voice, "Speaker 2": speaker2_voice}
     try:
         transcript_list = ast.literal_eval(script)
-        entries = [(entry, voice_map) for entry in transcript_list]
+        if not isinstance(transcript_list, list):
+            raise ValueError("Transcript is not a list")
+
+        entries = [(entry, voice_map) for entry in transcript_list if isinstance(entry, tuple) and len(entry) == 2]
         with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
             results = [r for r in executor.map(process_segment, entries) if r is not None]
         if not results:
@@ -78,8 +83,11 @@ def process_pdf(pdf_file, speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_
 
         script_provider = "openrouter" if provider == "kyutai" and openrouter_key else provider
         transcript, _ = generate_podcast_script(pdf_file.name, provider=script_provider)
+
         if transcript is None:
-            return "Transcript generation failed", None
+            return "Transcript generation failed: got None", None
+        if not transcript.strip().startswith("["):
+            return f"Malformed transcript:\n{transcript}", None
 
         audio_path = os.path.join(os.path.dirname(tmp_path), f"audio_{os.path.basename(tmp_path).replace('.pdf', '.wav')}")
 
