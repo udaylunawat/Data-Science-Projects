@@ -8,6 +8,12 @@ Kyutai:- It's a newly launched (3rd July 2025) open-source realtime TTS model th
 
 🚀 **Try it out:** [Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/udayl/NotebookLM-Kokoro_TTS_App)
 
+### 🔗 Run this notebook in Google Colab
+
+<a href="https://colab.research.google.com/drive/1JkFWT2K-Pbe3FsBI-v6fZehnQoB5r4Fk?usp=sharing" target="_blank">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab"/>
+</a>
+
 ## Sample audio (Kokoro)
 
 https://github.com/user-attachments/assets/6ba7338b-9e63-42ed-88e3-e5890ebb949c
