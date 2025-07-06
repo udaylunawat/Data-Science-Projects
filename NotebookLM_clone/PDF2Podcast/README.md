@@ -1,8 +1,10 @@
 # PDF2Podcast
 
-This project uses [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) – a lightweight, open-weight TTS model with 82 million parameters – to create a Google NotebookLM style Text-to-Speech application with a user-friendly Gradio interface.
+This project uses [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) – a lightweight, open-weight TTS model with 82 million parameters and Kyutai – a newly launched (3rd July 2025) open-source realtime TTS model that's even comparable to ElevenLabs models, to create a Google NotebookLM style Text-to-Speech application with a user-friendly Gradio interface.
 
 Reason for using Kokoro:- It's the best open-source non-proprietary model in [TTS-Arena](https://huggingface.co/spaces/TTS-AGI/TTS-Arena)
+
+Kyutai:- It's a newly launched (3rd July 2025) open-source realtime TTS model that's even comparable to ElevenLabs models
 
 🚀 **Try it out:** [Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/udayl/NotebookLM-Kokoro_TTS_App)
 
