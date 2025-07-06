@@ -6,9 +6,13 @@ Reason for using Kokoro:- It's the best open-source non-proprietary model in [TT
 
 🚀 **Try it out:** [Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/udayl/NotebookLM-Kokoro_TTS_App)
 
-## Sample audio
+## Sample audio (Kokoro)
 
 https://github.com/user-attachments/assets/6ba7338b-9e63-42ed-88e3-e5890ebb949c
+
+## Sample audio (Kyutai)
+
+https://github.com/user-attachments/assets/029b0090-cb9c-4281-829f-4d0a8257efe2
 
 ## Architecture diagram
 
@@ -43,7 +47,7 @@ graph TD
 
 - **PDF to Audio Conversion:** Upload any PDF document and convert it into engaging conversations
 - **Multiple Voice Options:** Choose from different voices for each speaker
-- **API Flexibility:** Support for both OpenAI and OpenRouter APIs
+- **API Flexibility:** Support for OpenAI, OpenRouter, and **Kyutai TTS (Moshi)**
 - **Parallel Processing:** Utilizes all CPU cores for faster audio generation
 - **User-Friendly Interface:** Easy-to-use Gradio web interface
 - **Cross-Platform:** Works on Windows, Linux, and macOS
@@ -99,6 +103,13 @@ Or install individually:
 ```bash
 pip install "kokoro>=0.9.2" soundfile torch gradio PyPDF2 numpy openai ipython
 ```
+
+## Using Kyutai TTS (Moshi)
+
+- Select **Kyutai** as the API provider in the Gradio interface.
+- No API key is required for Kyutai/Moshi (runs locally).
+- You can specify voice files from [DSM TTS Voices](https://huggingface.co/expresso/DSM-TTS-Voices).
+
 
 ## Running the Application
 
