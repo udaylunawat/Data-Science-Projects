@@ -13,6 +13,6 @@ dependencies = [
     "openai",
     "ipython",
     "gradio",
-    "sphn>=0.2.0",
+    "sphn<=0.2.0",
     "moshi>=0.2.4",
 ]
