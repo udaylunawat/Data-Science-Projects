@@ -292,15 +292,16 @@ def generate_podcast_script(
     Set provider="openrouter" to use OpenRouter, otherwise uses OpenAI.
     """
     pdf_basename = os.path.splitext(os.path.basename(pdf_path))[0]
-    folder = os.path.join(os.getcwd(), pdf_basename)
+    folder = os.path.join("/tmp", pdf_basename)
     os.makedirs(folder, exist_ok=True)
 
     destination_pdf = os.path.join(folder, os.path.basename(pdf_path))
-    if not os.path.exists(destination_pdf):
+    try:
         shutil.copy(pdf_path, destination_pdf)
         print(f"Copied {pdf_path} to {destination_pdf}")
-    else:
-        print(f"PDF already copied at {destination_pdf}")
+    except PermissionError:
+        print(f"[WARNING] Cannot copy PDF to {destination_pdf}, using original path.")
+        destination_pdf = pdf_path  # fallback
 
     transcript_path = os.path.join(folder, output_file)
     # If transcript exists, load and return it without calling the API.

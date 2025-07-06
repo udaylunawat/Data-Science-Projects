@@ -77,9 +77,7 @@ def process_pdf(pdf_file, speaker1_voice, speaker2_voice, kyutai_voice1, kyutai_
         if pdf_file is None:
             return "No file uploaded", None
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            shutil.copy2(pdf_file.name, tmp.name)
-            tmp_path = tmp.name
+        tmp_path = pdf_file.name
 
         script_provider = "openrouter" if provider == "kyutai" and openrouter_key else provider
         transcript, _ = generate_podcast_script(pdf_file.name, provider=script_provider)
